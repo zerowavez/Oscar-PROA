@@ -600,23 +600,185 @@ db.Oscar.aggregate([
 
 **6.1** A série de filmes Toy Story ganhou Oscars em quais anos?
 
+R: 3 e 4, em 2011 e 2020 respectivamente:
+
+```
+db.Oscar.find(
+  { 
+    nome_do_filme: { $regex: "Toy Story", $options: "i" },
+    vencedor: 1
+  },
+  { 
+    _id: 0, 
+    nome_do_filme: 1, 
+    categoria: 1, 
+    ano_cerimonia: 1 
+  }
+)
+```
+
 **6.2** Quantas indicações a franquia Toy Story recebeu no total?
 
+R: 11
+
+```
+db.Oscar.aggregate([
+  {
+    $match: {
+      nome_do_filme: { $regex: "Toy Story", $options: "i" }
+    }
+  },
+  {
+    $group: {
+      _id: "Total Franquia",
+      total_indicacoes: { $sum: 1 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      total_indicacoes: 1
+    }
+  }
+])
+```
+
 **6.3** Em quais categorias os filmes Toy Story foram indicados?
+
+R: MUSIC (Original Musical or Comedy Score), WRITING (Adapted Screenplay), MUSIC (Original Song), SOUND EDITING, ANIMATED FEATURE FILM, WRITING (Screenplay Written Directly for the Screen), BEST PICTURE
+
+```
+db.Oscar.aggregate([
+  {
+    $match: {
+      nome_do_filme: { $regex: "Toy Story", $options: "i" }
+    }
+  },
+  {
+    $group: {
+      _id: "Total Franquia",
+      categorias: { $addToSet: "$categoria" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      categorias: 1,
+      total_categorias: { $size: "$categorias" }
+    }
+  }
+])
+```
 
 ### Crash
 
 **6.4** Em qual edição do Oscar o filme "Crash" concorreu?
 
+R: 2006
+
+```
+db.Oscar.find(
+  {
+    nome_do_filme: { $regex: "^Crash$", $options: "i" },
+    categoria: { $regex: "BEST PICTURE", $options: "i" },
+    vencedor: 1
+  },
+  {
+    _id: 0,
+    nome_do_filme: 1,
+    ano_cerimonia: 1,
+  }
+)
+```
+
 **6.5** Quantas indicações o filme "Crash" recebeu?
 
+R: 8 indicações
+
+```
+db.Oscar.aggregate([
+  {
+    $match: {
+      nome_do_filme: { $regex: "Crash", $options: "i" }
+    }
+  },
+  {
+    $group: {
+      _id: "Total Franquia",
+      total_indicacoes: { $sum: 1 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      total_indicacoes: 1
+    }
+  }
+])
+```
+
 **6.6** "Crash" ganhou o Oscar de Melhor Filme?
+
+R: Sim
+
+```
+db.Oscar.find(
+  {
+    nome_do_filme: { $regex: "^Crash$", $options: "i" },
+    categoria: { $regex: "BEST PICTURE", $options: "i" },
+    vencedor: 1
+  },
+  {
+    _id: 0,
+    nome_do_filme: 1,
+    categoria: 1,
+    ano_cerimonia: 1,
+    vencedor: 1
+  }
+)
+```
 
 ### Central do Brasil
 
 **6.7** O filme "Central do Brasil" aparece no banco de dados?
 
+R: Não aparece
+
+```
+db.Oscar.aggregate([
+  {
+    $match: {
+      nome_do_filme: { $regex: "Central do Brasil", $options: "i"}
+  }
+ }
+])
+```
+
 **6.8** Se sim, quantas indicações "Central do Brasil" recebeu?
+
+R: Não há indicações
+
+```
+db.Oscar.aggregate([
+  {
+    $match: {
+      nome_do_filme: { $regex: "Central do Brasil", $options: "i" }
+    }
+  },
+  {
+    $group: {
+      _id: "Total Franquia",
+      total_indicacoes: { $sum: 1 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      total_indicacoes: 1
+    }
+  }
+])
+```
 
 ---
 
@@ -624,12 +786,114 @@ db.Oscar.aggregate([
 
 **7.1** No campo "vencedor", altere todos os valores "true" (string) para true (booleano) e "false" (string) para false (booleano).
 
+```
+db.Oscar.updateMany(
+  {},
+  [
+    {
+      $set: {
+        vencedor: {
+          $cond: {
+            if: { $eq: ["$vencedor", 1] },
+            then: NumberInt0,
+            else: NumberInt1
+          }
+        }
+      }
+    }
+  ]
+)
+```
+
 **7.2** Inclua no banco 3 filmes que nunca foram nomeados ao Oscar, mas que você acha que merecem. Use dados fictícios mas realistas.
+
+```
+db.Oscar.insertMany([
+  {
+    ano_cerimonia: 2019,
+    cerimonia: 91,
+    categoria: "WRITING (ORIGINAL SCREENPLAY)",
+    nome_do_indicado: "Boots Riley",
+    nome_do_filme: "Sorry to Bother You",
+    vencedor: 0
+  },
+  {
+    ano_cerimonia: 1968,
+    cerimonia: 40,
+    categoria: "INTERNATIONAL FEATURE FILM",
+    nome_do_indicado: "Jean-Luc Godard",
+    nome_do_filme: "La Chinoise",
+    vencedor: 0
+  },
+  {
+    ano_cerimonia: 2010,
+    cerimonia: 82,
+    categoria: "INTERNATIONAL FEATURE FILM",
+    nome_do_indicado: "Sion Sono",
+    nome_do_filme: "Love Exposure",
+    vencedor: 0
+  }
+])
+```
 
 **7.3** Adicione uma nova categoria chamada "BEST INTERNATIONAL FEATURE FILM" com alguns vencedores recentes (2020-2024).
 
+```
+db.Oscar.insertMany([
+  {
+    ano_cerimonia: 2020,
+    cerimonia: 92,
+    categoria: "BEST INTERNATIONAL FEATURE FILM",
+    nome_do_indicado: "Bong Joon Ho",
+    nome_do_filme: "Parasite",
+    vencedor: 1
+  },
+  {
+    ano_cerimonia: 2021,
+    cerimonia: 93,
+    categoria: "BEST INTERNATIONAL FEATURE FILM",
+    nome_do_indicado: "Thomas Vinterberg",
+    nome_do_filme: "Another Round",
+    vencedor: 1
+  },
+  {
+    ano_cerimonia: 2022,
+    cerimonia: 94,
+    categoria: "BEST INTERNATIONAL FEATURE FILM",
+    nome_do_indicado: "Ryusuke Hamaguchi",
+    nome_do_filme: "Drive My Car",
+    vencedor: 1
+  },
+  {
+    ano_cerimonia: 2024,
+    cerimonia: 96,
+    categoria: "BEST INTERNATIONAL FEATURE FILM",
+    nome_do_indicado: "Jonathan Glazer",
+    nome_do_filme: "The Zone of Interest",
+    vencedor: 1
+  }
+])
+```
+
 **7.4** Corrija possíveis erros de digitação nos nomes dos filmes (ex: espaços extras, caracteres especiais desnecessários).
+
+```
+db.Oscar.find({ nome_do_filme: { $type: "string" } }).forEach(function(doc) {
+  let cleanedTitle = doc.nome_do_filme.trim().replace(/\s+/g, ' ');
+
+  if (cleanedTitle !== doc.nome_do_filme) {
+    db.Oscar.updateOne(
+      { _id: doc._id },
+      { $set: { nome_do_filme: cleanedTitle } }
+    );
+  }
+});
+```
 
 **7.5** Remova todos os registros com valor NULL no campo nome_do_filme.
 
----
+```
+db.Oscar.deleteMany({
+  nome_do_filme: "NULL"
+})
+```
